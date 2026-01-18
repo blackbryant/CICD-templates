@@ -1,0 +1,49 @@
+stages:
+  - prepare
+  - testing
+  - build
+  - publish
+
+
+get_version:
+  stage: prepare
+  script:
+    - apk add --no-cache jq  
+    - echo "VERSION=$(cat deno.json | jq -r '.version' | tr -d '\r')" > build.env
+    - echo " $(cat deno.json | jq -r '.version')"
+  artifacts:
+    reports:
+      dotenv: build.env  
+
+run_tests:
+    stage: testing
+    image: denoland/deno:latest
+    script:
+      - deno test --allow-net
+
+build_docker_image:
+    stage: build
+    tags:
+      - shell
+    needs:
+      - [run_tests,get_version]
+    script: 
+#      - docker build -t registry.gitlab.test.com.tw:8929/fin5/shopping-cat-v2-main:1.0 .
+       - echo " build version  $VERSION"
+       - docker build -t $CI_REGISTRY_IMAGE:$VERSION .
+publish_docker_image:
+    stage: publish
+    tags:
+      - shell
+    needs:
+      - [build_docker_image,get_version]
+    before_script:
+#      - doecho "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin registry.gitlab.test.com.tw:8929
+       - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+    script:
+#      - docker push registry.gitlab.test.com.tw:8929/fin5/shopping-cat-v2-main:1.0
+       - echo " publish version  $VERSION"
+       - docker build --network host -t $CI_REGISTRY_IMAGE:$VERSION .
+       - docker push $CI_REGISTRY_IMAGE:$VERSION
+
+
