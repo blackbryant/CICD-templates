@@ -1,0 +1,70 @@
+# gitlab 預設檔名為 .gitlab-ci.yml
+
+stages:
+    - linter
+    - build
+    - testing
+    - deploy
+
+#workflow:
+#    rules:
+#        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#          when: always
+#        - when: never
+
+#image: alpine:latest
+image: ruby:3.1.2-alpine3.16
+
+variables: 
+    my_name: "hello kitty"    
+
+# 確保 helloword 靠最左邊，下方內容有縮排
+helloword:
+  #stage: linter
+  #image: alpine:latest  # 也可以在 Job 內單獨指定
+  script:
+    - echo "hellworld 2 $my_name"
+    - chmod +x ./run.sh
+    - ./run.sh
+
+run_ruby_scripts:
+    script:
+        - ruby -v
+        - ruby -e "puts 'hello world'"
+
+
+helloword:
+
+    stage: linter
+    script:
+        - echo "hellworld 2 $my_name"
+        - chmod +x ./run.sh
+        - ./run.sh
+
+run_unit_tests:
+    stage: build
+ #   needs: 
+ #       - bad_job
+    script:
+        - echo "run unit"
+    
+    before_script:
+        - echo "install package"
+        - echo "setting env"
+        
+    after_script:
+        - echo "delete none"
+
+build_image:
+    only:
+        - main
+    stage: testing
+    script:
+        - echo "main build docker's image"
+
+delpoy_job:
+    only:
+        - main
+    stage: deploy
+    script:
+        - echo "deploy to production"
